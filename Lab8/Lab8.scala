@@ -19,20 +19,34 @@ object Lab8 extends App {
 
   //Zadanie 3
   def indices[A](seq: Seq[A], el: A): Set[Int] = {
+
+    val addIndices = (r: Seq[(A, Int)], a: A) => r match {
+      case Seq() => (a, 0) +: r
+      case _ => (a, r.head._2 + 1) +: r
+    }
+
     val check = (s : Set[Int], e: (A, Int)) => e match {
       case (x, i) if x == el => s + i
       case _ => s
     }
-    seq.zipWithIndex.foldLeft(Set[Int]())(check)
+
+    seq.foldLeft(Seq[(A, Int)]())(addIndices).reverse.foldLeft(Set[Int]())(check)
   }
 
   //Zadanie 4
   def swap[A](seq: Seq[A]): Seq[A] = {
+
+    val addIndices = (r: Seq[(A, Int)], a: A) => r match {
+      case Seq() => (a, 0) +: r
+      case _ => (a, r.head._2 + 1) +: r
+    }
+
     val folding = (r: Seq[(A, Int)], p: (A, Int)) => p._2 % 2 match {
       case 0 => p +: r
       case _ => r.head +: p +: r.tail
     }
-    seq.zipWithIndex.foldLeft(Seq[(A, Int)]())(folding).reverse.map((p: (A, Int)) => p._1)
+
+    seq.foldLeft(Seq[(A, Int)]())(addIndices).reverse.foldLeft(Seq[(A, Int)]())(folding).reverse.map((p: (A, Int)) => p._1)
   }
 
   //Zadanie 5
