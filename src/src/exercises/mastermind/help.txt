@@ -1,0 +1,15 @@
+    Mastermind is a code-breaking game. You will have to guess the code that computer came up with.
+
+    Computer chooses four letters (from A to F, with repetitions allowed), for instance EBEA.
+
+    You won't know the code and your task is to guess it. You have 10 turns:
+    -> Each turn you can type in your guess for the code, for instance FEDA.
+    -> For every letter which is on a correct spot you will get 'x'
+    -> For every letter which is in the code but on another position you will get 'o'
+    -> For every letter which is not in the code you will get '-'
+
+    Let's say the code is EBEA and your guess is FEDA -
+    the feedback you get is 'x--o', because A is on the right spot, E is in the code,
+    and there is no F and D in the code.
+
+    Try to use the feedback to guess what the code is. Good luck!
