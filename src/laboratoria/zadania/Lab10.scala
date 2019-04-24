@@ -14,10 +14,15 @@ object Lab10 extends App {
   val result = (numbers.filter((n: Int) => n%2==0), numbers.filter((n: Int) => n%2 != 0))
 
   //Zadanie 4
-  val sequences: Seq[String] = Source.fromFile("src\\laboratoria\\zadania\\cyfry.txt").getLines.toList
-  val instances = sequences.foldLeft(0)((n: Int, s: String) => {
-    ???
-  })
+  val instances: Int = Source.fromFile("src\\laboratoria\\zadania\\cyfry.txt").getLines.toList.
+    map((s: String) => s.toList.map((c: Char) => (c + "").toInt)).foldLeft(0)((i: Int, seq: Seq[Int]) => i + f(seq)())
 
+  def f(seq: Seq[Int], j: Int = 0)(isSeq: Boolean = false): Int = seq match {
+    case Seq() => j
+    case e1 +: e2 +: s if e1 < e2 && isSeq => f(e2 +: s, j)(isSeq = true)
+    case e1 +: e2 +: s if e1 < e2 => f(e2 +: s, j+1)(isSeq = true)
+    case _ +: s if isSeq => f(s, j)(isSeq = false)
+    case _ +: s => f(s, j)()
+  }
 
 }
