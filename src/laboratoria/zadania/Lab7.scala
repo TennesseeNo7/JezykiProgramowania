@@ -11,7 +11,7 @@ object Lab7 extends App {
   //Zadanie 3
   def deStutter[A](seq: Seq[A]): Seq[A] = {
     val f = (seq: Seq[A], e: A) => seq match {
-      case Seq() => e+:seq
+      case Seq() => e +: seq
       case _ if seq.head != e => e+:seq
       case _ => seq
     }
