@@ -1,4 +1,4 @@
-package src.exercises.exams
+package laboratoria.kolokwia
 
 object Prekolokwium {
 

@@ -1,4 +1,4 @@
-package src.exercises.laboratories
+package laboratoria.zadania
 
 import io.StdIn
 
@@ -93,7 +93,7 @@ object Lab1 extends App {
 
       }
     } else {
-      isPrime = false;
+      isPrime = false
     }
   }
 
@@ -140,7 +140,7 @@ object Lab1 extends App {
         return false
       }
     }
-    return true
+     true
   }
 
   println("Podaj liczbę parzystą: ")

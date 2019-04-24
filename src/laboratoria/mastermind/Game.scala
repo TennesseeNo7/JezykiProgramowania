@@ -1,4 +1,4 @@
-package src.exercises.mastermind
+package laboratoria.mastermind
 
 class Game {
 

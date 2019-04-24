@@ -1,4 +1,4 @@
-package src.other.ticktactoe
+package inne.tictactoe
 
 import java.awt.EventQueue
 

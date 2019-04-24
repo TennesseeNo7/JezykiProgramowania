@@ -1,4 +1,4 @@
-package src.exercises.laboratories
+package laboratoria.zadania
 
 import io.StdIn
 
@@ -109,7 +109,7 @@ object Lab2 extends App {
     * Na przykład (T, N) = G, czyli (19, 13)= 32%25 = 6 = G
     */
   val max = ('Z'-'A') + 1
-  def code(a: Int, b:Int) : Int = return (a+b)%max
+  def code(a: Int, b:Int) : Int = (a+b)%max
 
   println("Podaj słowo do zaszyfrowania:")
   var value = StdIn.readLine()
@@ -147,7 +147,7 @@ object Lab2 extends App {
   while(i < value.length) {
     val a = value.charAt(i) - 65
     val b = key.charAt(i) - 65
-    coded += (code(a, b)).toChar
+    coded += code(a, b).toChar
     i += 1
   }
 

@@ -1,10 +1,9 @@
-package src.exercises.laboratories
+package laboratoria.zadania
 
 object Lab7 extends App {
 
   //Zadanie 1
-  def subseq[A](seq: Seq[A], begIdx: Int, endIdx: Int): Seq[A] = seq.drop(begIdx).take(endIdx-1)
-  //Bolą oczy od tego rozwiązania
+  def subseq[A](seq: Seq[A], begIdx: Int, endIdx: Int): Seq[A] = seq.slice(begIdx, begIdx + endIdx - 1)
 
   //Zadanie 2
   def pairPosNeg(seq: Seq[Double]): (Seq[Double], Seq[Double]) = seq.filter((n: Double) => n != 0).partition((n: Double) => n < 0)

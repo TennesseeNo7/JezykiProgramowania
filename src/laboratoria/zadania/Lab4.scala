@@ -1,4 +1,4 @@
-package src.exercises.laboratories
+package laboratoria.zadania
 
 object Lab4 extends App {
 
