@@ -63,8 +63,31 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     generate()
   }
 
-  def getDiagonal: Seq[Double] = ???
-  def getAntiDiagonal: Seq[Double] = ???
+  /**
+    * Creates Seq made from elements from main diagonal of this matrix
+    * @return sequence of elements from main diagonal
+    */
+  def getDiagonal: Seq[Double] = {
+    def aux(i: Int = 0, out: Seq[Double] = Seq()): Seq[Double] = i match {
+      case k if k == Math.min(rows, columns) => out.reverse
+      case _ => aux(i+1, get(i, i) +: out)
+    }
+    aux()
+  }
+
+  /**
+    * Creates Seq made from elements from anti-diagonal of this matrix
+    * @return sequence of elements from anti-diagonal
+    */
+  def getAntiDiagonal: Seq[Double] = {
+    if(!isSquare) throw new IllegalArgumentException("Matrix must be square")
+    if(isEmpty) return Seq()
+    def aux(i: Int = 0, j: Int = columns - 1, out: Seq[Double] = Seq()): Seq[Double] = i match {
+      case k if k == rows => out.reverse
+      case _ => aux(i+1, j-1, get(i, j) +: out)
+    }
+    aux()
+  }
 
   /**
     * Adds this and a given matrix
@@ -135,16 +158,33 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   def determinant: Double = ???
 
   /**
+    * Compares this matrix to another one
+    * @param m - any matrix
+    * @return true if this matrix is the same size and has the same elements as the other matrix, false otherwise
+    */
+  def ==(m: Matrix):Boolean = {
+    if(isEmpty && m.isEmpty) return true
+    if(size() != m.size()) return false
+    def check(i: Int = 0, j: Int = 0): Boolean = (i, j) match {
+      case t if t == (rows, 0) => true
+      case (a, b) if b == columns => check(a+1)
+      case (a, b) if get(a, b) != m.get(a, b) => false
+      case (a, b) => check(a, b+1)
+    }
+    check()
+  }
+
+  /**
     * Tests whether this matrix is empty
-    * @return true if this matrix is empty
+    * @return true if this matrix is empty, false otherwise
     */
   def isEmpty: Boolean = rows == 0
 
   /**
     * Tests whether this matrix is a square matrix
-    * @return true if this matrix is a square matrix
+    * @return true if this matrix is a square matrix, false otherwise
     */
-  def isSquare: Boolean = rows == columns
+  def isSquare: Boolean = if(isEmpty) false else rows == columns
 
   def isDiagonal: Boolean = ???
   def isLowerTriangular: Boolean = ???
@@ -198,6 +238,15 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     */
   def toSeq: Seq[Seq[Double]] = layout
 
+  //TODO swap with toString
+  def getArranged: String = {
+    def aux(i: Int = 0, out: String = ""): String = i match {
+      case _ if i == rows => out.dropRight(2)
+      case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + "), ")
+    }
+    if(isEmpty) "Matrix[]" else "Matrix[" + aux() + "]"
+  }
+
   /**
     * Converts this matrix to a String
     * @return String representation of this matrix
@@ -207,7 +256,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ if i == rows => out.dropRight(1)
       case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + ")\n")
     }
-    aux()
+    if(isEmpty) "()" else aux()
   }
 
 }
