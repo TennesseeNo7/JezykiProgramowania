@@ -19,31 +19,41 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Number of columns in this matrix
+    * @return number of columns in this matrix
     */
   def width(): Int = columns
 
   /**
     * Number of rows in this matrix
+    * @return number of rows in this matrix
     */
   def height(): Int = rows
 
   /**
     * Size of this matrix
+    * @return pair of numbers representing size of this matrix
     */
   def size(): (Int, Int) = (rows, columns)
 
   /**
-    * Selects the (i, j)-th element of this matrix
+    * Selects an element from this matrix
+    * @param i - index of row
+    * @param j - index of column
+    * @return (i, j)-th element of this matrix
     */
   def get(i: Int, j: Int): Double = layout(i)(j)
 
   /**
     * Selects the i-th row of this matrix
+    * @param i - index of row
+    * @return i-th row
     */
   def getRow(i: Int): Seq[Double] = layout(i)
 
   /**
     * Selects the j-th column of this matrix
+    * @param j - index of column
+    * @return j-th column
     */
   def getColumn(j: Int): Seq[Double] = {
     def generate(out: Seq[Double] = Seq(), index: Int = 0): Seq[Double] = index match {
@@ -53,12 +63,17 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     generate()
   }
 
+  def getDiagonal: Seq[Double] = ???
+  def getAntiDiagonal: Seq[Double] = ???
+
   /**
     * Adds this and a given matrix
+    * @param m - any matrix
+    * @return sum of the matrices
     */
   def +(m: Matrix): Matrix = {
     if(size == m.size()) {
-      merge(m, _+_)
+      compose(m, _+_)
     } else {
       throw new IllegalArgumentException("Matrices are not of equal size")
     }
@@ -66,10 +81,12 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Subtracts this and a given matrix
+    * @param m - any matrix
+    * @return difference of the matrices
     */
   def -(m: Matrix): Matrix = {
     if(size == m.size()) {
-      merge(m, _-_)
+      compose(m, _-_)
     } else {
       throw new IllegalArgumentException("Matrices are not of equal size")
     }
@@ -77,6 +94,8 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Multiplies this and a given matrix
+    * @param m - any matrix
+    * @return product of the matrices
     */
   def *(m: Matrix): Matrix = {
     if(columns != m.height()) throw new IllegalArgumentException("The number of columns of the left matrix must be " +
@@ -95,6 +114,8 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Multiplies this matrix by a scalar
+    * @param d - any number
+    * @return this matrix multiplied by the scalar
     */
   def *(d: Double): Matrix = map((a: Double) => a*d)
 
@@ -115,23 +136,28 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Tests whether this matrix is empty
+    * @return true if this matrix is empty
     */
   def isEmpty: Boolean = rows == 0
 
   /**
     * Tests whether this matrix is a square matrix
+    * @return true if this matrix is a square matrix
     */
   def isSquare: Boolean = rows == columns
 
   def isDiagonal: Boolean = ???
-  def isLowerDiagonal: Boolean = ???
-  def isUpperDiagonal: Boolean = ???
+  def isLowerTriangular: Boolean = ???
+  def isUpperTriangular: Boolean = ???
+  def isIdentity: Boolean = ???
   def isSymmetric: Boolean = ???
   def isInvertible: Boolean = ???
   def isOrthogonal: Boolean = ???
 
   /**
-    * Applies function to every element of this function
+    * Builds new matrix by applying function to all elements of this matrix
+    * @param f - function to apply to each element
+    * @return new matrix resulting from applying function f to each element of this matrix
     */
   def map(f: Double => Double): Matrix = {
     new Matrix(layout.map( (s: Seq[Double]) => s.map( (d: Double) => f(d) ) ))
@@ -141,9 +167,9 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   def deleteColumn(j: Int): Matrix = ???
 
   /**
-    * Merges two matrices into a new one by applying function to every element of each matrices
+    *
     */
-  def merge(m: Matrix, f: (Double, Double) => Double): Matrix = {
+  def compose(m: Matrix, f: (Double, Double) => Double): Matrix = {
     def aux(i: Int = 0, out: Seq[Seq[Double]] = Seq())(j: Int = 0, row: Seq[Double] = Seq()): Seq[Seq[Double]] = j match {
       case _ if i == rows => out.reverse
       case k if k == columns => aux(i+1, row.reverse +: out)()
@@ -154,23 +180,27 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Folds the elements of this matrix using the specified associative binary operator
+    * @param op - the binary operator
+    * @param out - the start value
     */
-  def fold[A](f: (A, Double) => A)(out: A): A = {
+  def fold[A](op: (A, Double) => A)(out: A): A = {
     def aux(i: Int = 0, out: A = out)(j: Int = 0): A = j match {
       case _ if i == rows => out
       case k if k == columns => aux(i+1, out)()
-      case _ => aux(i, f(out, get(i, j)))(j+1)
+      case _ => aux(i, op(out, get(i, j)))(j+1)
     }
     aux()()
   }
 
   /**
     * Returns sequence made of the elements of this matrix
+    * @return sequence of elements of this matrix
     */
   def toSeq: Seq[Seq[Double]] = layout
 
   /**
     * Converts this matrix to a String
+    * @return String representation of this matrix
     */
   override def toString: String = {
     def aux(i: Int = 0, out: String = ""): String = i match {
