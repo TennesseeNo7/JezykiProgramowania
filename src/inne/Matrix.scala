@@ -19,13 +19,13 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Number of columns in this matrix
-    * @return number of columns in this matrix
+    * @return width of this matrix
     */
   def width(): Int = columns
 
   /**
     * Number of rows in this matrix
-    * @return number of rows in this matrix
+    * @return height of this matrix
     */
   def height(): Int = rows
 
@@ -37,22 +37,22 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   /**
     * Selects an element from this matrix
-    * @param i - index of row
+    * @param i - the index of row
     * @param j - index of column
-    * @return (i, j)-th element of this matrix
+    * @return element from (i, j) position of this matrix
     */
   def get(i: Int, j: Int): Double = layout(i)(j)
 
   /**
     * Selects the i-th row of this matrix
-    * @param i - index of row
+    * @param i - the index of row
     * @return i-th row
     */
   def getRow(i: Int): Seq[Double] = layout(i)
 
   /**
     * Selects the j-th column of this matrix
-    * @param j - index of column
+    * @param j - the index of column
     * @return j-th column
     */
   def getColumn(j: Int): Seq[Double] = {
@@ -92,7 +92,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   /**
     * Adds this and a given matrix
     * @param m - any matrix
-    * @return sum of the matrices
+    * @return new matrix resulting from summing the two matrices
     */
   def +(m: Matrix): Matrix = {
     if(size == m.size()) {
@@ -103,9 +103,9 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
-    * Subtracts this and a given matrix
+    * Subtracts a given matrix from this given matrix
     * @param m - any matrix
-    * @return difference of the matrices
+    * @return new matrix resulting from subtracting the two matrices
     */
   def -(m: Matrix): Matrix = {
     if(size == m.size()) {
@@ -116,9 +116,9 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
-    * Multiplies this and a given matrix
+    * Multiplies this matrix by a given matrix
     * @param m - any matrix
-    * @return product of the matrices
+    * @return new matrix resulting from multiplying the two matrices
     */
   def *(m: Matrix): Matrix = {
     if(columns != m.height()) throw new IllegalArgumentException("The number of columns of the left matrix must be " +
@@ -138,24 +138,59 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   /**
     * Multiplies this matrix by a scalar
     * @param d - any number
-    * @return this matrix multiplied by the scalar
+    * @return new matrix resulting from multiplying this matrix by the scalar
     */
   def *(d: Double): Matrix = map((a: Double) => a*d)
 
-  def transpose: Matrix = ???
+  /**
+    * Changes the rows to the columns and columns to the rows
+    * @return the transpose of this matrix
+    */
+  def transpose: Matrix = {
+    def aux(j: Int = 0, out: Seq[Seq[Double]] = Seq()): Seq[Seq[Double]] = j match {
+      case k if k == columns => out.reverse
+      case k => aux(j+1, getColumn(k) +: out)
+    }
+    new Matrix(aux())
+  }
 
-  def submatrix(i: Int, j: Int): Matrix = ???
+  def ^(n: Int): Matrix = {
+    if(!isSquare) throw new IllegalArgumentException("Only square matrices can be raised to a power")
+    if(n < 0 && !isInvertible) throw new IllegalArgumentException("Matrix is not invertible")
+    def aux(n: Int = n, out: Matrix = MatrixFactory.identityMatrix(width())): Matrix = n match {
+      case k if k < -1 => aux(math.abs(n), this.invert)
+      case 0 => out
+      case _ => aux(n-1, out*this)
+    }
+    aux()
+  }
+
+  /**
+    * Removes specified row and column from this matrix
+    * @param i - the index of column
+    * @param j - the index of row
+    * @return matrix resulting from deleting the specified row and column
+    */
+  def submatrix(i: Int, j: Int): Matrix = this.deleteRow(i).deleteColumn(j)
 
   def minor(i: Int, j: Int): Matrix = ???
-
   def cofactor(i: Int, j: Int): Matrix = ???
-
   def adjugate: Matrix = ???
-
   def invert: Matrix = ???
+  def leftInvert: Matrix = ???
+  def rightInvert: Matrix = ???
 
-  def trace: Double = ???
+  /**
+    * Sums every value from the main diagonal of this matrix
+    * @return trace of this matrix or IllegalArgumentException if this matrix is empty
+    */
+  def trace: Double = {
+    if (isEmpty) throw new IllegalArgumentException("Trace of empty matrix does not exist")
+    else getDiagonal.sum
+  }
+
   def determinant: Double = ???
+  def rank: Int = ???
 
   /**
     * Compares this matrix to another one
@@ -181,18 +216,100 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   def isEmpty: Boolean = rows == 0
 
   /**
-    * Tests whether this matrix is a square matrix
+    * Tests whether this matrix has the same width and height
     * @return true if this matrix is a square matrix, false otherwise
     */
   def isSquare: Boolean = if(isEmpty) false else rows == columns
 
-  def isDiagonal: Boolean = ???
-  def isLowerTriangular: Boolean = ???
-  def isUpperTriangular: Boolean = ???
-  def isIdentity: Boolean = ???
-  def isSymmetric: Boolean = ???
-  def isInvertible: Boolean = ???
-  def isOrthogonal: Boolean = ???
+  /**
+    * Tests whether every value of this matrix, except of values on the main diagonal which are not restricted,
+    * is equal to 0.0
+    * @return true if this matrix is a diagonal matrix, false otherwise
+    */
+  def isDiagonal: Boolean = {
+    if(isEmpty) return false
+    def check(i: Int = 0, j: Int = 0): Boolean = (i, j) match {
+      case t if t == (rows, 0) => true
+      case (a, b) if b == columns => check(a+1)
+      case (a, b) if get(a, b) == 0 || a == b => check(a, b+1)
+      case _ => false
+    }
+    check()
+  }
+
+  /**
+    * Tests whether this matrix is either lower triangular or upper triangular
+    * @return true if this matrix is a triangular matrix, false otherwise
+    */
+  def isTriangular: Boolean = isLowerTriangular || isUpperTriangular
+
+  /**
+    * Tests whether all elements above the main diagonal are equal to 0.0
+    * @return true if this matrix is lower triangular, false otherwise
+    */
+  def isLowerTriangular: Boolean = {
+    def aux(i: Int = 0, j: Int = 1): Boolean = i match {
+      case k if k == height()-1 => true
+      case _ if j == width() => aux(i+1, i+2)
+      case _ if get(i, j) != 0 => false
+      case _ => aux(i, j+1)
+    }
+    !isEmpty && isSquare && aux()
+  }
+
+  /**
+    * Tests whether all elements below the main diagonal are equal to 0.0
+    * @return true if this matrix is upper triangular, false otherwise
+    */
+  def isUpperTriangular: Boolean = {
+    def aux(i: Int = 1, j: Int = 0): Boolean = i match {
+      case k if k == height() => true
+      case k if j == k => aux(i+1)
+      case _ if get(i, j) != 0 => false
+      case _ => aux(i, j+1)
+    }
+    !isEmpty && isSquare && aux()
+  }
+
+  /**
+    * Test whether every value on the main diagonal is equal to 1.0 and every other element is equal to 0.0
+    * @return true if this matrix is identity matrix, false otherwise
+    */
+  def isIdentity: Boolean = {
+    if(isEmpty) return false
+    if(!isSquare) return false
+    def check(i: Int = 0, j: Int = 0): Boolean = (i, j) match {
+      case t if t == (rows, 0) => true
+      case (a, b) if b == columns => check(a+1)
+      case (a, b) if a == b && get(a, b) == 1 => check(a, b+1)
+      case (a, b) if a != b && get(a, b) == 0 => check(a, b+1)
+      case _ => false
+    }
+    check()
+  }
+
+  /**
+    * Test whether this matrix is symmetric along the main diagonal
+    * @return true if this matrix is symmetric, false otherwise
+    */
+  def isSymmetric: Boolean = if(isEmpty || !isSquare) false else this == this.transpose
+
+  /**
+    * Test whether this square matrix is both left invertible and right invertible. Matrix must be square
+    * in order to be invertible.
+    * @return true if this matrix is invertible, false otherwise
+    */
+  def isInvertible: Boolean = if(isEmpty || !isSquare) false else determinant != 0
+
+  def isLeftInvertible: Boolean = rank == columns
+
+  def isRightInvertible: Boolean = rank == rows
+
+  /**
+    * Test whether this matrix is orthogonal TODO change the description
+    * @return true if this matrix is orthogonal, false otherwise
+    */
+  def isOrthogonal: Boolean = isInvertible && this.transpose == this.invert
 
   /**
     * Builds new matrix by applying function to all elements of this matrix
@@ -203,11 +320,37 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     new Matrix(layout.map( (s: Seq[Double]) => s.map( (d: Double) => f(d) ) ))
   }
 
-  def deleteRow(i: Int): Matrix = ???
-  def deleteColumn(j: Int): Matrix = ???
+  /**
+    * Deletes i-th row of this matrix
+    * @param i - the index of the row
+    * @return new matrix with i-th row deleted
+    */
+  def deleteRow(i: Int): Matrix = {
+    def aux(m: Int = 0, out: Seq[Seq[Double]] = Seq()): Seq[Seq[Double]] = m match {
+      case k if k == rows => out.reverse
+      case k if k == i => aux(m+1, out)
+      case _ => aux(m+1, getRow(m) +: out)
+    }
+    new Matrix(aux())
+  }
 
   /**
-    *
+    * Deletes j-th column of this matrix
+    * @param j - the index of the column
+    * @return new matrix with j-th column deleted
+    */
+  def deleteColumn(j: Int): Matrix = {
+    def aux(i: Int = 0, out: Seq[Seq[Double]] = Seq())(m: Int = 0, temp: Seq[Double] = Seq()): Seq[Seq[Double]] = i match {
+      case k if k == rows => out.reverse
+      case _ if m == columns => aux(i+1, temp.reverse +: out)()
+      case _ if m == j => aux(i, out)(m+1, temp)
+      case _ => aux(i, out)(m+1, get(i, m) +: temp)
+    }
+    new Matrix(aux()())
+  }
+
+  /**
+    * TODO make description
     */
   def compose(m: Matrix, f: (Double, Double) => Double): Matrix = {
     def aux(i: Int = 0, out: Seq[Seq[Double]] = Seq())(j: Int = 0, row: Seq[Double] = Seq()): Seq[Seq[Double]] = j match {
@@ -233,12 +376,15 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
-    * Returns sequence made of the elements of this matrix
+    * Creates sequence made of sequences representing rows of this matrix
     * @return sequence of elements of this matrix
     */
   def toSeq: Seq[Seq[Double]] = layout
 
-  //TODO swap with toString
+  /**
+    * Creates two dimensional String representation of this matrix
+    * @return two dimensional String representation of this matrix
+    */ //TODO swap with toString
   def getArranged: String = {
     def aux(i: Int = 0, out: String = ""): String = i match {
       case _ if i == rows => out.dropRight(2)
