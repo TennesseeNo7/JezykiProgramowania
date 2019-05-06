@@ -173,12 +173,21 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     */
   def submatrix(i: Int, j: Int): Matrix = this.deleteRow(i).deleteColumn(j)
 
-  def minor(i: Int, j: Int): Matrix = ???
-  def cofactor(i: Int, j: Int): Matrix = ???
-  def adjugate: Matrix = ???
-  def invert: Matrix = ???
+  def toREF: Matrix = ???
+
+  def toRREF: Matrix = ???
+
+  // **** TODO
+  def comatrix: Matrix = MatrixFactory.functionMatrix(size(), cofactor)
+
+  def adjugate: Matrix = comatrix.transpose
+
+  def invert: Matrix = adjugate*(1/determinant)
+
   def leftInvert: Matrix = ???
+
   def rightInvert: Matrix = ???
+  // **** TODO
 
   /**
     * Sums every value from the main diagonal of this matrix
@@ -189,8 +198,18 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     else getDiagonal.sum
   }
 
+  // **** TODO
+  def minor(i: Int, j: Int): Double = ???
+
+  def cofactor(i: Int, j: Int): Double = (if(i+j % 2 == 0) 1 else -1)*minor(i, j)
+
   def determinant: Double = ???
-  def rank: Int = ???
+
+  def rank: Int = {
+    if(isEmpty) 0
+    else ???
+  }
+  // **** TODO
 
   /**
     * Compares this matrix to another one
@@ -295,8 +314,13 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   def isSymmetric: Boolean = if(isEmpty || !isSquare) false else this == this.transpose
 
   /**
-    * Test whether this square matrix is both left invertible and right invertible. Matrix must be square
-    * in order to be invertible.
+    * Tests whether this square matrix is not invertible.
+    * @return true if this matrix is singular, false otherwise
+    */
+  def isSingular: Boolean = !isInvertible
+
+  /**
+    * Test whether this square matrix is both left invertible and right invertible.
     * @return true if this matrix is invertible, false otherwise
     */
   def isInvertible: Boolean = if(isEmpty || !isSquare) false else determinant != 0
@@ -305,8 +329,12 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   def isRightInvertible: Boolean = rank == rows
 
+  def isREF: Boolean = ???
+
+  def isRREF: Boolean = ???
+
   /**
-    * Test whether this matrix is orthogonal TODO change the description
+    * Test whether this matrix is a square matrix whose columns and rows are orthogonal unit vectors.
     * @return true if this matrix is orthogonal, false otherwise
     */
   def isOrthogonal: Boolean = isInvertible && this.transpose == this.invert
@@ -350,7 +378,11 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
-    * TODO make description
+    * Creates new matrix made of elements formed by applying function to corresponding
+    * elements of this and a given matrix
+    * @param m - any matrix
+    * @param f - the function
+    * @return new matrix composed from this function and the two matrices
     */
   def compose(m: Matrix, f: (Double, Double) => Double): Matrix = {
     def aux(i: Int = 0, out: Seq[Seq[Double]] = Seq())(j: Int = 0, row: Seq[Double] = Seq()): Seq[Seq[Double]] = j match {
@@ -384,13 +416,13 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   /**
     * Creates two dimensional String representation of this matrix
     * @return two dimensional String representation of this matrix
-    */ //TODO swap with toString
+    */
   def getArranged: String = {
     def aux(i: Int = 0, out: String = ""): String = i match {
-      case _ if i == rows => out.dropRight(2)
-      case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + "), ")
+      case _ if i == rows => out.dropRight(1)
+      case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + ")\n")
     }
-    if(isEmpty) "Matrix[]" else "Matrix[" + aux() + "]"
+    if(isEmpty) "()" else aux()
   }
 
   /**
@@ -399,10 +431,10 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     */
   override def toString: String = {
     def aux(i: Int = 0, out: String = ""): String = i match {
-      case _ if i == rows => out.dropRight(1)
-      case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + ")\n")
+      case _ if i == rows => out.dropRight(2)
+      case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + "), ")
     }
-    if(isEmpty) "()" else aux()
+    if(isEmpty) "Matrix[]" else "Matrix[" + aux() + "]"
   }
 
 }
