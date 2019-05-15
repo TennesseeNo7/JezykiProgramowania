@@ -2,6 +2,9 @@ package inne
 
 class Matrix(private var layout: Seq[Seq[Double]]) {
 
+  /*
+   * Checks if every Seq[Double] in the layout has the same size - if every rows has the same width
+   */
   private def checkSize(length: Int = layout.head.size, lay: Seq[Seq[Double]] = layout.tail): Unit = lay match {
     case Seq() =>
     case h +: _ if h.size != length =>
@@ -10,12 +13,15 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
   if(layout.size > 1) checkSize()
 
-  if(layout.nonEmpty && layout.head.isEmpty) {
-    layout = Seq(): Seq[Seq[Double]]
+  // Checks if the layout is not empty
+  if((layout.nonEmpty && layout.head.isEmpty) || layout.isEmpty) {
+    throw new IllegalArgumentException("Matrix cannot have no elements")
   }
 
   private val rows = layout.size
-  private val columns = if(rows == 0) 0 else layout.head.size
+  private val columns = layout.head.size
+
+  // BASIC VALUES
 
   /**
     * Number of columns in this matrix
@@ -68,11 +74,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     * @return sequence of elements from main diagonal
     */
   def getDiagonal: Seq[Double] = {
-    def aux(i: Int = 0, out: Seq[Double] = Seq()): Seq[Double] = i match {
-      case k if k == Math.min(rows, columns) => out.reverse
-      case _ => aux(i+1, get(i, i) +: out)
-    }
-    aux()
+    foldByIndexes((out: Seq[Double], e: Double) => e +: out)((i: Int, j: Int) => i == j)(Seq()).reverse
   }
 
   /**
@@ -81,13 +83,10 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     */
   def getAntiDiagonal: Seq[Double] = {
     if(!isSquare) throw new IllegalArgumentException("Matrix must be square")
-    if(isEmpty) return Seq()
-    def aux(i: Int = 0, j: Int = columns - 1, out: Seq[Double] = Seq()): Seq[Double] = i match {
-      case k if k == rows => out.reverse
-      case _ => aux(i+1, j-1, get(i, j) +: out)
-    }
-    aux()
+    foldByIndexes((out: Seq[Double], e: Double) => e +: out)((i: Int, j: Int) => i + j == columns - 1)(Seq()).reverse
   }
+
+  // BASIC OPERATIONS
 
   /**
     * Adds this and a given matrix
@@ -143,17 +142,10 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   def *(d: Double): Matrix = map((a: Double) => a*d)
 
   /**
-    * Changes the rows to the columns and columns to the rows
-    * @return the transpose of this matrix
+    * Raises this matrix to a given power
+    * @param n - any integer
+    * @return Matrix to the power of the argument
     */
-  def transpose: Matrix = {
-    def aux(j: Int = 0, out: Seq[Seq[Double]] = Seq()): Seq[Seq[Double]] = j match {
-      case k if k == columns => out.reverse
-      case k => aux(j+1, getColumn(k) +: out)
-    }
-    new Matrix(aux())
-  }
-
   def ^(n: Int): Matrix = {
     if(!isSquare) throw new IllegalArgumentException("Only square matrices can be raised to a power")
     if(n < 0 && !isInvertible) throw new IllegalArgumentException("Matrix is not invertible")
@@ -163,6 +155,20 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ => aux(n-1, out*this)
     }
     aux()
+  }
+
+  // OPERATIONS
+
+  /**
+    * Changes the rows to the columns and columns to the rows
+    * @return the transpose of this matrix
+    */
+  def transpose: Matrix = {
+    def aux(j: Int = 0, out: Seq[Seq[Double]] = Seq()): Seq[Seq[Double]] = j match {
+      case k if k == columns => out.reverse
+      case k => aux(j+1, getColumn(k) +: out)
+    }
+    new Matrix(aux())
   }
 
   /**
@@ -177,7 +183,6 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
 
   def toRREF: Matrix = ???
 
-  // **** TODO
   def comatrix: Matrix = MatrixFactory.functionMatrix(size(), cofactor)
 
   def adjugate: Matrix = comatrix.transpose
@@ -187,18 +192,15 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   def leftInvert: Matrix = ???
 
   def rightInvert: Matrix = ???
-  // **** TODO
+
+  // VALUES
 
   /**
     * Sums every value from the main diagonal of this matrix
     * @return trace of this matrix or IllegalArgumentException if this matrix is empty
     */
-  def trace: Double = {
-    if (isEmpty) throw new IllegalArgumentException("Trace of empty matrix does not exist")
-    else getDiagonal.sum
-  }
+  def trace: Double = getDiagonal.sum
 
-  // **** TODO
   def minor(i: Int, j: Int): Double = ???
 
   def cofactor(i: Int, j: Int): Double = (if(i+j % 2 == 0) 1 else -1)*minor(i, j)
@@ -209,7 +211,8 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     if(isEmpty) 0
     else ???
   }
-  // **** TODO
+
+  // TESTS
 
   /**
     * Compares this matrix to another one
@@ -217,7 +220,6 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     * @return true if this matrix is the same size and has the same elements as the other matrix, false otherwise
     */
   def ==(m: Matrix):Boolean = {
-    if(isEmpty && m.isEmpty) return true
     if(size() != m.size()) return false
     def check(i: Int = 0, j: Int = 0): Boolean = (i, j) match {
       case t if t == (rows, 0) => true
@@ -229,32 +231,23 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
-    * Tests whether this matrix is empty
+    * Tests whether this matrix contains only zeroes
     * @return true if this matrix is empty, false otherwise
     */
-  def isEmpty: Boolean = rows == 0
+  def isEmpty: Boolean = forAll((e: Double) => e == 0)
 
   /**
     * Tests whether this matrix has the same width and height
     * @return true if this matrix is a square matrix, false otherwise
     */
-  def isSquare: Boolean = if(isEmpty) false else rows == columns
+  def isSquare: Boolean = rows == columns
 
   /**
     * Tests whether every value of this matrix, except of values on the main diagonal which are not restricted,
     * is equal to 0.0
     * @return true if this matrix is a diagonal matrix, false otherwise
     */
-  def isDiagonal: Boolean = {
-    if(isEmpty) return false
-    def check(i: Int = 0, j: Int = 0): Boolean = (i, j) match {
-      case t if t == (rows, 0) => true
-      case (a, b) if b == columns => check(a+1)
-      case (a, b) if get(a, b) == 0 || a == b => check(a, b+1)
-      case _ => false
-    }
-    check()
-  }
+  def isDiagonal: Boolean = forAll((e: Double) => e == 0, (i: Int, j: Int) => i != j)
 
   /**
     * Tests whether this matrix is either lower triangular or upper triangular
@@ -273,7 +266,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ if get(i, j) != 0 => false
       case _ => aux(i, j+1)
     }
-    !isEmpty && isSquare && aux()
+    isSquare && aux()
   }
 
   /**
@@ -287,31 +280,20 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ if get(i, j) != 0 => false
       case _ => aux(i, j+1)
     }
-    !isEmpty && isSquare && aux()
+    isSquare && aux()
   }
 
   /**
     * Test whether every value on the main diagonal is equal to 1.0 and every other element is equal to 0.0
     * @return true if this matrix is identity matrix, false otherwise
     */
-  def isIdentity: Boolean = {
-    if(isEmpty) return false
-    if(!isSquare) return false
-    def check(i: Int = 0, j: Int = 0): Boolean = (i, j) match {
-      case t if t == (rows, 0) => true
-      case (a, b) if b == columns => check(a+1)
-      case (a, b) if a == b && get(a, b) == 1 => check(a, b+1)
-      case (a, b) if a != b && get(a, b) == 0 => check(a, b+1)
-      case _ => false
-    }
-    check()
-  }
+  def isIdentity: Boolean = !isSquare && this == MatrixFactory.identityMatrix(width())
 
   /**
     * Test whether this matrix is symmetric along the main diagonal
     * @return true if this matrix is symmetric, false otherwise
     */
-  def isSymmetric: Boolean = if(isEmpty || !isSquare) false else this == this.transpose
+  def isSymmetric: Boolean = !isSquare && this == this.transpose
 
   /**
     * Tests whether this square matrix is not invertible.
@@ -323,7 +305,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     * Test whether this square matrix is both left invertible and right invertible.
     * @return true if this matrix is invertible, false otherwise
     */
-  def isInvertible: Boolean = if(isEmpty || !isSquare) false else determinant != 0
+  def isInvertible: Boolean = !isSquare && determinant != 0
 
   def isLeftInvertible: Boolean = rank == columns
 
@@ -339,14 +321,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
     */
   def isOrthogonal: Boolean = isInvertible && this.transpose == this.invert
 
-  /**
-    * Builds new matrix by applying function to all elements of this matrix
-    * @param f - function to apply to each element
-    * @return new matrix resulting from applying function f to each element of this matrix
-    */
-  def map(f: Double => Double): Matrix = {
-    new Matrix(layout.map( (s: Seq[Double]) => s.map( (d: Double) => f(d) ) ))
-  }
+  // ADDITIONAL
 
   /**
     * Deletes i-th row of this matrix
@@ -363,6 +338,16 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
+    * Adds row to this matrix
+    * @param row - sequence of numbers of the same width as this matrix
+    * @return matrix with the row added
+    */
+  def addRow(row: Seq[Double]): Matrix = {
+    if(row.size != columns) throw new IllegalArgumentException("Row must be the same width as this matrix")
+    new Matrix(layout :+ row)
+  }
+
+  /**
     * Deletes j-th column of this matrix
     * @param j - the index of the column
     * @return new matrix with j-th column deleted
@@ -375,6 +360,32 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ => aux(i, out)(m+1, get(i, m) +: temp)
     }
     new Matrix(aux()())
+  }
+
+  /**
+    * Adds column to this matrix
+    * @param column - sequence of numbers of the same height as this matrix
+    * @return matrix with the column added
+    */
+  def addColumn(column: Seq[Double]): Matrix = {
+    if(column.size != rows) throw new IllegalArgumentException("Column must be the same height as this matrix")
+    def aux(in: Seq[Seq[Double]] = layout, out: Seq[Seq[Double]] = Seq(), c: Seq[Double] = column):
+    Seq[Seq[Double]] = in match {
+      case Seq() => out.reverse
+      case s +: l => aux(l, (s :+ column.head) +: out, c.tail)
+    }
+    new Matrix(aux())
+  }
+
+  // UTILITY
+
+  /**
+    * Builds new matrix by applying function to all elements of this matrix
+    * @param f - function to apply to each element
+    * @return new matrix resulting from applying function f to each element of this matrix
+    */
+  def map(f: Double => Double): Matrix = {
+    new Matrix(layout.map( (s: Seq[Double]) => s.map( (d: Double) => f(d) ) ))
   }
 
   /**
@@ -408,10 +419,77 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
   }
 
   /**
+    * Folds elements  of this matrix which satisfy the predicate using the specified associative binary operator
+    * @param op - the binary operator
+    * @param pred - the predicate
+    * @param out - the start value
+    */
+  def foldByIndexes[A](op: (A, Double) => A)(pred: (Int, Int) => Boolean)(out: A): A = {
+    def aux(i: Int = 0, out: A = out)(j: Int = 0): A = j match {
+      case _ if i == rows => out
+      case k if k == columns => aux(i+1, out)()
+      case _ if pred(i, j) => aux(i, op(out, get(i, j)))(j+1)
+      case _ => aux(i, out)(j+1)
+    }
+    aux()()
+  }
+
+  /**
+    * Tests if any element in this matrix satisfies the specified predicate
+    * @param pred - the predicate
+    * @return true if any element satisfies the predicate, false otherwise
+    */
+  def forAny(pred: Double => Boolean): Boolean = fold((t: Boolean, e: Double) => pred(e) || t)(false)
+
+  /**
+    * Tests if any element, indexes of which satisfies the index predicate, satisfies the specified predicate
+    * @param pred1 - the element predicate
+    * @param pred2- the index predicate
+    * @return true if any element satisfies the predicate, false otherwise
+    */
+  def forAny(pred1: Double => Boolean)(pred2: (Int, Int) => Boolean): Boolean = {
+    foldByIndexes((t: Boolean, e: Double) => pred1(e) || t)((i: Int, j: Int) => pred2(i, j))(false)
+  }
+
+  /**
+    * Tests if all elements in this matrix satisfy the specified predicate
+    * @param pred - the predicate
+    * @return true if every element satisfies the predicate, false otherwise
+    */
+  def forAll(pred: Double => Boolean): Boolean = fold((t: Boolean, e: Double) => pred(e) && t)(true)
+
+  /**
+    * Tests if every element and its indexes statisfy specified predicates
+    * @param pred1 - the element predicate
+    * @param pred2- the index predicate
+    * @return true if any element satisfies the predicate, false otherwise
+    */
+  def forAll(pred1: Double => Boolean, pred2: (Int, Int) => Boolean): Boolean = {
+    foldByIndexes((t: Boolean, e: Double) => pred1(e) || t)((i: Int, j: Int) => pred2(i, j))(false)
+  }
+
+  /**
+    * Tests whether this matrix contains specified element
+    * @param e - any number
+    * @return true if this matrix contains this value, false otherwise
+    */
+  def contains(e: Double): Boolean = fold((t: Boolean, el: Double) => t || e == el)(false)
+
+  // SEQ
+
+  /**
     * Creates sequence made of sequences representing rows of this matrix
     * @return sequence of elements of this matrix
     */
   def toSeq: Seq[Seq[Double]] = layout
+
+  /**
+    * Creates sequence made of elements of this matrix
+    * @return sequence of elements of this matrix
+    */
+  def toSingleSec: Seq[Double] = layout.foldLeft(Seq(): Seq[Double])((out: Seq[Double], s: Seq[Double]) => out ++ s)
+
+  // META
 
   /**
     * Creates two dimensional String representation of this matrix
@@ -422,7 +500,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ if i == rows => out.dropRight(1)
       case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + ")\n")
     }
-    if(isEmpty) "()" else aux()
+    aux()
   }
 
   /**
@@ -434,7 +512,7 @@ class Matrix(private var layout: Seq[Seq[Double]]) {
       case _ if i == rows => out.dropRight(2)
       case _ => aux(i+1, out + "(" + getRow(i).foldLeft("")((s: String, d: Double) => s + ", " + d).drop(2) + "), ")
     }
-    if(isEmpty) "Matrix[]" else "Matrix[" + aux() + "]"
+    "Matrix[" + aux() + "]"
   }
 
 }
