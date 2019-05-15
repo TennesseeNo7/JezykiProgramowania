@@ -20,6 +20,7 @@ object Zad1 extends App {
         } else {
           println("Z tych wartosci nie mozna utworzyc trojkata")
         }
+        system.terminate()
     }
 
   }
@@ -40,6 +41,5 @@ object Zad1 extends App {
   val server: ActorRef = system.actorOf(Props[Server], "server")
 
   client ! Send(2, 3, 4, server)
-  //system.terminate()
 
 }
