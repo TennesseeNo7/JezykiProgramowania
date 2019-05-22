@@ -1,45 +1,94 @@
 package laboratoria.zadania.Lab12
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Kill, PoisonPill, Props}
+
+import scala.io.Source
 
 object Zad1 extends App {
 
-  case class Send(a: Double, b: Double, c: Double, server: ActorRef)
-  case class Verify(a: Double, b: Double, c: Double)
-
-  class Client extends Actor {
-
-    override def receive: PartialFunction[Any, Unit] = {
-
-      case Send(a, b, c, s) =>
-        s ! Verify(a, b, c)
-
-      case b: Boolean =>
-        if(b) {
-          println("Z tych wartosci mozna utworzyc trojkat")
-        } else {
-          println("Z tych wartosci nie mozna utworzyc trojkata")
-        }
-        system.terminate()
-    }
-
-  }
-
-  class Server extends Actor {
-
-    override def receive: PartialFunction[Any, Unit] = {
-
-      case Verify(a, b, c) if a+b > c => sender ! true
-      case _ => sender ! true
-
-    }
-
-  }
-
   val system = ActorSystem()
-  val client: ActorRef = system.actorOf(Props[Client], "client")
-  val server: ActorRef = system.actorOf(Props[Server], "server")
 
-  client ! Send(2, 3, 4, server)
+  case class Init(numberOfWorkers: Int)
+
+  case class Task(text: List[String])
+
+  case class Execute(text: String)
+
+  case class Result(res: Int)
+
+  // WORKER
+  class Worker extends Actor {
+
+    override def receive: PartialFunction[Any, Unit] = {
+      case Execute(text) =>
+        sender ! Result(text.foldLeft(0)((i: Int, c: Char) => if(c == ' ') i+1 else i) + 1)
+    }
+
+  }
+
+  // COORDINATOR
+  class Coordinator extends Actor {
+
+    var workers: Seq[ActorRef] = Seq()
+    var initialized = false
+    var pointer = 0
+    var actorsCount: Int = 0
+
+    var finalResult = 0
+    var executed = 0
+    var toBeExecuted = 0
+
+    override def receive: PartialFunction[Any, Unit] = {
+      case Init(numberOfWorkers) =>
+        var x = 0; while(x < numberOfWorkers) {
+          workers = workers :+ ActorSystem().actorOf(Props[Worker], name="worker" + x)
+        x += 1
+        }
+        initialized = true
+        actorsCount = numberOfWorkers
+      case Task(text) if initialized =>
+
+        toBeExecuted = text.size
+
+        def assign(textList: List[String] = text): Unit = textList match {
+          case _ if pointer == actorsCount =>
+            pointer = 0
+            assign(textList)
+          case List(s) =>
+            workers(pointer) ! Execute(s)
+            pointer = 0
+          case e +: r =>
+            workers(pointer) ! Execute(e)
+            pointer += 1
+            assign(r)
+        }
+
+        assign(text)
+
+      case Result(res) =>
+        finalResult += res
+        executed += 1
+        //println(res + " " + executed + " " + toBeExecuted)
+        if(executed == toBeExecuted) {
+          println(finalResult)
+          // TODO Terminate system
+        }
+
+    }
+
+  }
+
+  def dane(): List[String] = {
+    Source.fromFile("src\\laboratoria\\zadania\\Lab11\\ogniem_i_mieczem.txt").getLines.toList
+  }
+
+  {
+    val coordinator: ActorRef = system.actorOf(Props[Coordinator], "client")
+
+    coordinator ! Init(2)
+    coordinator ! Task(dane())
+  }
 
 }
+
+
